@@ -45,9 +45,9 @@ public class Puzzle15_1 {
             Set<Coordinates> neighbors = getNeighbors(coors);
             for (Coordinates neighbor : neighbors) {
                 if (neighbor.colIndex >= 0 &&
-                    neighbor.colIndex < nCols &&
-                    neighbor.rowIndex >= 0 &&
-                    neighbor.rowIndex < nRows) {
+                        neighbor.colIndex < nCols &&
+                        neighbor.rowIndex >= 0 &&
+                        neighbor.rowIndex < nRows) {
                     if (!processed.contains(neighbor)) {
                         Integer toNeighborCost = nodes.get(neighbor.rowIndex).get(neighbor.colIndex);
                         Integer totalNeighborCost = cost + toNeighborCost;
