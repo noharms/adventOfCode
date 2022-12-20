@@ -8,62 +8,26 @@ import java.util.*;
 
 public class Puzzle9_2 {
 
+    public static final Point START_POSITION = new Point(0, 0);
+
     public static void main(String[] args) throws IOException {
         List<Move> headMoves = readInput();
 
-        Point headPosition = new Point(0, 0);
-        Point tailPosition = new Point(0, 0);
-        LinkedList<Point> pathTail = new LinkedList<>(List.of(tailPosition));
+        Rope rope = new Rope();
+        LinkedList<Point> pathTail = new LinkedList<>(List.of(START_POSITION));
         for (Move headMove : headMoves) {
             Move remainingMoves = headMove;
             while (remainingMoves.distance > 0) {
                 Move oneStep = new Move(remainingMoves.direction, 1);
                 remainingMoves = new Move(remainingMoves.direction, remainingMoves.distance - 1);
 
-                headPosition = headPosition.moveBy(oneStep);
-                tailPosition = dragTail(headPosition, tailPosition);
-                pathTail.addLast(tailPosition);
+                rope.moveHeadBy(oneStep);
+                pathTail.addLast(rope.getTailPosition());
             }
         }
 
         Set<Point> distinctPositions = new HashSet<>(pathTail);
         System.out.println(distinctPositions.size());
-    }
-
-    private static Point dragTail(Point headPosition, Point tailPosition) {
-        if (areTouching(headPosition, tailPosition)) {
-            return tailPosition;
-        }
-        Point shift = headPosition.minus(tailPosition);
-        if (shift.row == 0) {
-            if (shift.column > 1) {
-                return tailPosition.right();
-            } else {
-                return tailPosition.left();
-            }
-        } else if (shift.column == 0) {
-            if (shift.row > 1) {
-                return tailPosition.bottom();
-            } else {
-                return tailPosition.top();
-            }
-        } else {
-            if (shift.row < 0 && shift.column < 0) { // tail is bottom right from head
-                return tailPosition.topLeft();
-            } else if (shift.row < 0 && shift.column > 0) { // tail is bottom left
-                return tailPosition.topRight();
-            } else if (shift.row > 0 && shift.column < 0) { // tails is top right
-                return tailPosition.bottomLeft();
-            } else if (shift.row > 0 && shift.column > 0) { // tail is top left
-                return tailPosition.bottomRight();
-            }
-        }
-        throw new IllegalStateException("Unexpected case miss");
-    }
-
-    private static boolean areTouching(Point headPosition, Point tailPosition) {
-        Point shift = headPosition.minus(tailPosition);
-        return Math.abs(shift.row) <= 1 && Math.abs(shift.column) <= 1;
     }
 
     private static List<Move> readInput() throws IOException {
@@ -105,10 +69,10 @@ public class Puzzle9_2 {
 
         Point moveBy(Move move) {
             return switch (move.direction) {
-                case LEFT -> new Point(row - move.distance, column);
-                case RIGHT -> new Point(row + move.distance, column);
-                case UP -> new Point(row, column - move.distance);
-                case DOWN -> new Point(row, column + move.distance);
+                case LEFT -> new Point(row, column - move.distance);
+                case RIGHT -> new Point(row, column + move.distance);
+                case UP -> new Point(row - move.distance, column );
+                case DOWN -> new Point(row + move.distance, column );
             };
         }
 
@@ -146,6 +110,73 @@ public class Puzzle9_2 {
 
         Point right() {
             return new Point(row, column + 1);
+        }
+    }
+
+    private static class Rope {
+
+        private static final int N_KNOTS = 10;
+
+        private LinkedList<Point> knotPositions;
+
+        public Rope() {
+            this.knotPositions = new LinkedList<>(Collections.nCopies(N_KNOTS, START_POSITION));
+        }
+
+        private static boolean isTouchingSuccessor(Point current, Point successor) {
+            Point shift = current.minus(successor);
+            return Math.abs(shift.row) <= 1 && Math.abs(shift.column) <= 1;
+        }
+
+        public void moveHeadBy(Move oneStep) {
+            Point oldHeadPosition = knotPositions.getFirst();
+            Point newHeadPosition = oldHeadPosition.moveBy(oneStep);
+            knotPositions.set(0, newHeadPosition);
+            dragSuccessorsAlong();
+        }
+
+        private void dragSuccessorsAlong() {
+            for (int i = 1; i < N_KNOTS; i++) {
+                Point current = knotPositions.get(i - 1);
+                Point oldSuccessorPosition = knotPositions.get(i);
+                Point newSuccessorPosition = dragAlong(current, oldSuccessorPosition);
+                knotPositions.set(i, newSuccessorPosition);
+            }
+        }
+
+        private static Point dragAlong(Point currentKnot, Point successorKnot) {
+            if (isTouchingSuccessor(currentKnot, successorKnot)) {
+                return successorKnot;
+            }
+            Point shift = currentKnot.minus(successorKnot);
+            if (shift.row == 0) {
+                if (shift.column > 1) {
+                    return successorKnot.right();
+                } else {
+                    return successorKnot.left();
+                }
+            } else if (shift.column == 0) {
+                if (shift.row > 1) {
+                    return successorKnot.bottom();
+                } else {
+                    return successorKnot.top();
+                }
+            } else {
+                if (shift.row < 0 && shift.column < 0) { // tail is bottom right from head
+                    return successorKnot.topLeft();
+                } else if (shift.row < 0 && shift.column > 0) { // tail is bottom left
+                    return successorKnot.topRight();
+                } else if (shift.row > 0 && shift.column < 0) { // tails is top right
+                    return successorKnot.bottomLeft();
+                } else if (shift.row > 0 && shift.column > 0) { // tail is top left
+                    return successorKnot.bottomRight();
+                }
+            }
+            throw new IllegalStateException("Unexpected case miss");
+        }
+
+        public Point getTailPosition() {
+            return knotPositions.getLast();
         }
     }
 }
